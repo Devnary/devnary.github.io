@@ -9,11 +9,13 @@
     </head>
     <body>
         <input type="file" id="input"></input><br>
+        <div id="info">Informations</div><br>
         <canvas id="canvas"></cancas>
         <script>
             
             let eInput = document.getElementById("input"),
-                eCanvas = document.getElementById("canvas")
+                eInfo = document.getElementById("info"),
+                eCanvas = document.getElementById("canvas");
             
             let context = eCanvas.getContext("2d");
             
@@ -78,10 +80,10 @@
                 let index = 0,
                     dump = [];
                 
-                index = forward(buffer, dump, index, 4); // Signature
+                index = forward(buffer, dump, index, 4);
                 let signature = Uint8Array.from(dump);
                 
-                index = forward(buffer, dump, index, 3); // Video informations
+                index = forward(buffer, dump, index, 3);
                 let informations = Uint8Array.from(dump);
                 
                 canvas.width  = informations[0] * cS;
@@ -90,16 +92,19 @@
                 let chunk = context.createImageData(cS, cS);
                 for (let i = 0; i < Infinity; i++) {
                     
-                    index = forward(buffer, dump, index, 2); // chunk count
+                    index = forward(buffer, dump, index, 2);
                     let count = dump[0] << 8 | dump[1];
                     
+                    let totalBytes = 0;
                     for (let j = 0; j < count; j++) {
                         
-                        index = forward(buffer, dump, index, 2); // a chunk pos
+                        index = forward(buffer, dump, index, 2);
                         let pos = Uint8Array.from(dump);
                         
-                        index = forward(buffer, dump, index, 1); // a chunk size
-                        index = forward(buffer, dump, index, dump[0]); // a chunk size
+                        index = forward(buffer, dump, index, 1);
+                        totalBytes += dump[0];
+                        
+                        index = forward(buffer, dump, index, dump[0]);
                         let data = decompressChunk(dump);
                         
                         chunk.data.forEach((_, i) => {
@@ -113,6 +118,8 @@
                         
                         context.putImageData(chunk, pos[0] * cS, pos[1] * cS);
                     }
+                        
+                    eInfo.innerHTML = `Frame ${i} | Chunks count ${count} | Frame size ${totalBytes} bytes`;
                     
                     if (index >= buffer.length)
                         break;
