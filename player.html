@@ -2,26 +2,34 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>Convert video to .GCC</title>
+        <title>Player for .GCC</title>
         <style>
             * {background-color: #000; color: #FFF; font-size: 20px; font-family: monospace; margin: 0px; padding: 0px;}
+            button {border: solid #FFF 2px}
+            button:active {border: solid #0F0 2px}
+            button:hover {border: solid #0FF 2px}
+            button:disabled {border: solid #555 2px}
+            canvas {background-color: #777;}
         </style>
     </head>
     <body>
-        <input type="file" id="input"></input><br>
-        <div id="info">Informations</div><br>
-        <canvas id="canvas"></cancas>
+        <div id="dropIt" style="text-align: center; font-size: 50px;user-select: none;">Drop the file</div>
+        <div id="panel">
+            <button id="togglePlay" disabled>Play</button> <button id="restart" disabled>Restart</button><br>
+            Play speed :<input type="range" id="speed" min="0" max="10" step="1" disabled></input><br>
+            <canvas id="canvas"></canvas><br>
+            <div id="info"></div>
+        </div>
         <script>
             
-            let eInput = document.getElementById("input"),
-                eInfo = document.getElementById("info"),
-                eCanvas = document.getElementById("canvas");
+            document.getElementById("panel").style.display = "none";
             
-            let context = eCanvas.getContext("2d");
+            let dropFunc = e => {
             
-            eInput.addEventListener("change", e => {
+                e.stopPropagation();
+                e.preventDefault();
                 
-                let file = e.originalTarget.files[0];
+                let file = e.dataTransfer.files[0];
                 
                 let reader = new FileReader();
                 
@@ -30,6 +38,78 @@
                     await processFile(e.target.result);
                 });
                 reader.readAsBinaryString(file);
+                
+                eTogglePlay.disabled = false;
+                eRestart.disabled = false;
+                eSpeed.disabled = false;
+                
+                document.removeEventListener("drop", dropFunc);
+                document.removeEventListener("dragover", dragOverFunc);
+                document.body.removeChild(document.getElementById("dropIt"));
+                document.getElementById("panel").style.display = "";
+                
+                delete dragOverFunc, dropFunc;
+            },
+                dragOverFunc = e => {
+                
+                e.stopPropagation();
+                e.preventDefault();
+                
+                e.dataTransfer.dropEffect = "copy";
+            };
+            
+            document.addEventListener("drop", dropFunc);
+            document.addEventListener("dragover", dragOverFunc);
+            
+            let eSpeed = document.getElementById("speed"),
+                eRestart = document.getElementById("restart"),
+                eTogglePlay = document.getElementById("togglePlay"),
+                eInfo = document.getElementById("info"),
+                eCanvas = document.getElementById("canvas");
+            
+            let context = eCanvas.getContext("2d");
+            
+            let play = false,
+                extraSleep = (eSpeed.value - eSpeed.max * 0.5) * -100,
+                buffer, file, infos,
+                framesIndex = [], // TODO Slider, select custom start frame/time in video.
+                currFrame = 0,
+                index = 0,
+                dump = [];
+            
+            eSpeed.addEventListener("change", e => {
+                
+                extraSleep = (eSpeed.value - 1) * -100;
+            });
+            
+            eRestart.addEventListener("click", e => {
+                
+                if (!play) {
+                    
+                    play = true;
+                    eTogglePlay.innerHTML = "Pause";
+                }
+                index = 7;
+                currFrame = 0;
+                eRestart.disabled = true;
+                playVideo();
+            });
+            
+            eTogglePlay.addEventListener("click", e => {
+                
+                if (play) {
+                    
+                    play = false;
+                    eTogglePlay.innerHTML = "Play";
+                    eRestart.disabled = false;
+                }
+                else {
+                    
+                    play = true;
+                    eTogglePlay.innerHTML = "Pause";
+                    eRestart.disabled = true;
+                    playVideo();
+                }
             });
             
             const cS = 8,
@@ -73,24 +153,26 @@
                 return i;
             }
             
-            async function processFile(buffer) {
+            async function processFile(binary) {
                 
-                buffer = buffer.split("").map(e => e.charCodeAt());
-                
-                let index = 0,
-                    dump = [];
+                buffer = binary.split("").map(e => e.charCodeAt());
                 
                 index = forward(buffer, dump, index, 4);
-                let signature = Uint8Array.from(dump);
+                file = Uint8Array.from(dump);
                 
                 index = forward(buffer, dump, index, 3);
-                let informations = Uint8Array.from(dump);
+                infos = Uint8Array.from(dump);
                 
-                canvas.width  = informations[0] * cS;
-                canvas.height = informations[1] * cS;
+                canvas.width  = infos[0] * cS;
+                canvas.height = infos[1] * cS;
+            }
+            
+            async function playVideo() {
                 
                 let chunk = context.createImageData(cS, cS);
-                for (let i = 0; i < Infinity; i++) {
+                for (let i = currFrame; index < buffer.length && play; i++,currFrame=i) {
+                    
+                    framesIndex[i] = index;
                     
                     index = forward(buffer, dump, index, 2);
                     let count = dump[0] << 8 | dump[1];
@@ -118,13 +200,10 @@
                         
                         context.putImageData(chunk, pos[0] * cS, pos[1] * cS);
                     }
-                        
-                    eInfo.innerHTML = `Frame ${i} | Chunks count ${count} | Frame size ${totalBytes} bytes`;
                     
-                    if (index >= buffer.length)
-                        break;
+                    eInfo.innerHTML = `Frame ${currFrame} | Chunks count ${count} | Frame size ${totalBytes} bytes`;
                     
-                    await sleep(1000 / informations[2]);
+                    await sleep(1000 / infos[2] + extraSleep);
                 }
             }
         </script>
