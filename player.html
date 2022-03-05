@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Convert video to .GCC</title>
+        <style>
+            * {background-color: #000; color: #FFF; font-size: 20px; font-family: monospace; margin: 0px; padding: 0px;}
+        </style>
+    </head>
+    <body>
+        <input type="file" id="input"></input><br>
+        <canvas id="canvas"></cancas>
+        <script>
+            
+            let eInput = document.getElementById("input"),
+                eCanvas = document.getElementById("canvas")
+            
+            let context = eCanvas.getContext("2d");
+            
+            eInput.addEventListener("change", e => {
+                
+                let file = e.originalTarget.files[0];
+                
+                let reader = new FileReader();
+                
+                reader.addEventListener("load", async e => {
+                    
+                    await processFile(e.target.result);
+                });
+                reader.readAsBinaryString(file);
+            });
+            
+            const cS = 8,
+                  cL = cS * cS;
+
+            async function sleep(ms) {
+                return new Promise((resolve, reject) => {
+                    setTimeout(resolve, ms);
+                });
+            }
+            
+            function decompressChunk(buffer) {
+                
+                let result = [],
+                    repeat = 1;
+                for (let i = 0; i < buffer.length; i++)  {
+                    
+                    if (buffer[i] & 1) {
+                        
+                        for (let j = 0; j < repeat; j++)
+                            result.push(buffer[i]);
+                        
+                        repeat = 1;
+                    }
+                    else
+                        repeat = buffer[i] >> 1;
+                }
+                
+                return result;
+            }
+
+            function forward(buffer, output, i, n) {
+                
+                let starts = i,
+                    dump = [];
+                for (; i < starts + n; i++)
+                    dump.push(buffer[i]);
+                
+                output.splice(0, output.length, ...dump);
+                
+                return i;
+            }
+            
+            async function processFile(buffer) {
+                
+                buffer = buffer.split("").map(e => e.charCodeAt());
+                
+                let index = 0,
+                    dump = [];
+                
+                index = forward(buffer, dump, index, 4); // Signature
+                let signature = Uint8Array.from(dump);
+                
+                index = forward(buffer, dump, index, 3); // Video informations
+                let informations = Uint8Array.from(dump);
+                
+                canvas.width  = informations[0] * cS;
+                canvas.height = informations[1] * cS;
+                
+                let chunk = context.createImageData(cS, cS);
+                for (let i = 0; i < Infinity; i++) {
+                    
+                    index = forward(buffer, dump, index, 2); // chunk count
+                    let count = dump[0] << 8 | dump[1];
+                    
+                    for (let j = 0; j < count; j++) {
+                        
+                        index = forward(buffer, dump, index, 2); // a chunk pos
+                        let pos = Uint8Array.from(dump);
+                        
+                        index = forward(buffer, dump, index, 1); // a chunk size
+                        index = forward(buffer, dump, index, dump[0]); // a chunk size
+                        let data = decompressChunk(dump);
+                        
+                        chunk.data.forEach((_, i) => {
+                            
+                            if ((i & 3) == 0) {
+                                
+                                chunk.data[i    ] = chunk.data[i + 1] = chunk.data[i + 2] = data[i / 4];
+                                chunk.data[i + 3] = 255;
+                            }
+                        });
+                        
+                        context.putImageData(chunk, pos[0] * cS, pos[1] * cS);
+                    }
+                    
+                    if (index >= buffer.length)
+                        break;
+                    
+                    await sleep(1000 / informations[2]);
+                }
+            }
+        </script>
+    </body>
+</html>
