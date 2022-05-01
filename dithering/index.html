@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Dithering</title>
+        <style>
+            * {background-color: #222; color: #DDD; font-size: 20px; font-family: monospace; margin: 0px; padding: 0px;}
+            canvas {position: absolute; right: 0px; top: 0px; height: 100%; z-index: 1; image-rendering: optimizeSpeed;}
+            #options {width: 55%;}
+            #options, .box, .number {position: relative; z-index: 2; display: inline-block; background-color: #0005;}
+            .box {width: 100%;border: #AAA solid 1px;}
+            .number {color: #ADA;}
+            input[type="range"] {width: 80%;}
+        </style>
+        <script src="algorithms.js"></script>
+        <script src="script.js"></script>
+    </head>
+    <body>
+        <div id="dropFile" style="position: absolute; left: 38vw; top: 45%; font-size: 50px; user-select: none;">Drop the file</div>
+        <div id="options">
+            Algorithm: <select id="algorithm"></select><br>Palette: <select id="palette"></select><br>
+            <div class="box">Brightness<input type="range" id="brightness" min="-100" max="100" step="1" value="0"></input><span class="number" id="brightnessValue">&nbsp;&nbsp;&nbsp;0</span></div><br>
+            <div class="box">Contrast&nbsp;&nbsp;<input type="range" id="contrast" min="-100" max="100" step="1" value="0"></input><span class="number" id="contrastValue">&nbsp;&nbsp;&nbsp;0</span></div>
+            <div class="box">Resolution<input type="range" id="resolution" min="8" max="504" step="8" value="256"></input><span class="number" id="resolutionValue">256</span></div>
+            <div class="box">Artifacts&nbsp;<input type="range" id="jpeg" min="0" max="100" step="1" value="0"></input><span class="number" id="jpegValue">&nbsp;&nbsp;&nbsp;0</span></div>
+        </div>
+        <canvas id="canvas"></canvas>
+    </body>
+</html>
