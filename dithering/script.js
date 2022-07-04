@@ -1,8 +1,8 @@
 (function() {
+    
+    let DOMimport, DOMcanvas, DOMalgorithm, DOMpalette, DOMcontrast, DOMresolution, DOMjpeg, DOMbrightness, DOMcontrastValue, DOMbrightnessValue, DOMresolutionValue, DOMjpegValue,
 
-    let DOMcanvas, DOMalgorithm, DOMpalette, DOMcontrast, DOMresolution, DOMjpeg, DOMbrightness, DOMcontrastValue, DOMbrightnessValue, DOMresolutionValue, DOMjpegValue,
-
-        image, width, height, context, imageData,
+        image, width, height, context, imageData, result,
 
         algorithm = [0, 1],
         palette = 0,
@@ -11,9 +11,10 @@
         contrast = 0,
         brightness = 0,
         jpeg = 0;
-
+    
     document.addEventListener("DOMContentLoaded", () => {
         
+        DOMimport = document.getElementById("import"),
         DOMcanvas = document.getElementById("canvas"),
         DOMalgorithm = document.getElementById("algorithm"),
         DOMpalette = document.getElementById("palette"),
@@ -34,28 +35,7 @@
             e.stopPropagation();
             e.preventDefault();
             
-            let file = e.dataTransfer.files[0];
-            
-            let reader = new FileReader();
-            
-            reader.addEventListener("load", e => {
-                
-                image = new Image(),
-                image.src = e.target.result;
-                image.addEventListener("load", Process);
-            });
-            reader.readAsDataURL(file);
-            
-//             document.removeEventListener("drop", dropFunc);
-//             document.removeEventListener("dragover", dragOverFunc);
-            if (!image) {
-                
-                document.getElementById("options").style.display = "",
-                DOMcanvas.style.display = "";
-                document.body.removeChild(document.getElementById("dropFile"));
-            }
-            
-//             delete dragOverFunc, dropFunc;
+            readFile(e.dataTransfer.files[0]);
         },
             dragOverFunc = e => {
             
@@ -83,6 +63,11 @@
             
             DOMpalette.innerHTML += `<option value="${i}">${palette[0]}</option>`;
             Process();
+        });
+        
+        DOMimport.addEventListener("change", e => {
+            
+            readFile(e.originalTarget.files[0]);
         });
         
         DOMalgorithm.addEventListener("change", () => {
@@ -128,6 +113,26 @@
             Process();
         });
     });
+    
+    function readFile(file) {
+        
+        let reader = new FileReader();
+        
+        reader.addEventListener("load", e => {
+            
+            image = new Image(),
+            image.src = e.target.result;
+            image.addEventListener("load", Process);
+        });
+        reader.readAsDataURL(file);
+        
+        if (!image) {
+            
+            document.getElementById("options").style.display = "",
+            DOMcanvas.style.display = "";
+            document.body.removeChild(document.getElementById("dropFile"));
+        }
+    }
 
     function Process() {
         
@@ -251,6 +256,28 @@
 //     function CharacterBrailleLike(palette) {
 //         
 //         console.time();
+//         
+//         if (typeof palette == "function") {
+//             let tmp = [];
+//             for (let i = 0, off=0; i < 1<<24; i++) {
+//                 
+//                 let rgb = palette(i >> 16 & 0xFF, i >> 8 & 0xFF, i & 0xFF);
+//                 if (tmp.findIndex(clr=>clr[0]==rgb[0]&&clr[1]==rgb[1]&&clr[2]==rgb[2]) >= 0) {
+//                     
+//                     off++;
+//                     continue;
+//                 }
+//                 tmp[i - off] = [],
+//                 tmp[i - off][0] = rgb[0],
+//                 tmp[i - off][1] = rgb[1],
+//                 tmp[i - off][2] = rgb[2];
+//             }
+//             palette = tmp;
+//         }
+//         
+//         palette = palette.map(e => [Math.round(e[0]), Math.round(e[1]), Math.round(e[2])]);
+//         
+//         console.log(palette);
 //         
 //         for (let y = 0; y < height; y+=4)
 //             for (let x = 0; x < width; x+=2) {
@@ -492,7 +519,7 @@
                     y = parseInt(i * .25 / width),
                     
                     mV = matrix[(x % mW) + (y % mH) * (mW)],
-                    closest = fn(imageData.data[i] + r * mV, imageData.data[i+1] + r * mV, imageData.data[i+2] + r * mV);
+                    closest = fn(Math.min(255, imageData.data[i] + r * mV), Math.min(255, imageData.data[i+1] + r * mV), Math.min(255, imageData.data[i+2] + r * mV));
                 
                 imageData.data[i  ] = closest[0],
                 imageData.data[i+1] = closest[1],
@@ -500,6 +527,8 @@
                 imageData.data[i+3] = closest[3]+1 ? closest[3] : imageData.data[i+3];
             }
         });
+        
+        console.log(r);
         
         console.timeEnd("MatrixDithering");
         
@@ -533,4 +562,3 @@
         return imageData;
     }
 })();
-
