@@ -16,12 +16,12 @@
         <script src="script.js"></script>
     </head>
     <body>
-        <div id="dropFile" style="position: absolute; left: 38vw; top: 45%; font-size: 50px; user-select: none;">Drop the file</div>
+        <div id="dropFile" style="position: absolute; left: 38vw; top: 45%; font-size: 50px; user-select: none;">Drop the file<br><input type="file" id="import"></input></div>
         <div id="options">
             Algorithm: <select id="algorithm"></select><br>Palette: <select id="palette"></select><br>
             <div class="box">Brightness<input type="range" id="brightness" min="-100" max="100" step="1" value="0"></input><span class="number" id="brightnessValue">&nbsp;&nbsp;&nbsp;0</span></div><br>
             <div class="box">Contrast&nbsp;&nbsp;<input type="range" id="contrast" min="-100" max="100" step="1" value="0"></input><span class="number" id="contrastValue">&nbsp;&nbsp;&nbsp;0</span></div>
-            <div class="box">Resolution<input type="range" id="resolution" min="8" max="504" step="8" value="256"></input><span class="number" id="resolutionValue">256</span></div>
+            <div class="box">Resolution<input type="range" id="resolution" min="8" max="504" step="8" value="256"></input><span class="number" id="resolutionValue">&nbsp;256</span></div>
             <div class="box">Artifacts&nbsp;<input type="range" id="jpeg" min="0" max="100" step="1" value="0"></input><span class="number" id="jpegValue">&nbsp;&nbsp;&nbsp;0</span></div>
         </div>
         <canvas id="canvas"></canvas>
