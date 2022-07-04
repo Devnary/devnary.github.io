@@ -67,7 +67,8 @@
         
         DOMimport.addEventListener("change", e => {
             
-            readFile(e.originalTarget.files[0]);
+            console.log(e);
+            readFile(e.srcElement.files[0]);
         });
         
         DOMalgorithm.addEventListener("change", () => {
